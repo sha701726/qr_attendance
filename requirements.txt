@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+mysql-connector-python
+pydantic
+python-dotenv
+sqlalchemy
+python-dotenv
+Flask
+flask-cors
