@@ -7,3 +7,6 @@ sqlalchemy
 python-dotenv
 Flask
 flask-cors
+supabase
+gspread
+oauth2client
