@@ -10,3 +10,4 @@ flask-cors
 supabase
 gspread
 oauth2client
+gunicorn
