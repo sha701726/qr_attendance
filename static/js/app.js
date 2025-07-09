@@ -1,7 +1,7 @@
 // app.js
 // Configuration
 const MATCH_QR_STRING = "f29cZb7Q6DuaMjYkTLV3nxR9KEqV2XoBslrHcwA8d1tZ5UeqgiWTvjNpLEsQ";
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://qr-attendance-9jq0.onrender.com";
 
 // State variables
 let qrScanner = null;
