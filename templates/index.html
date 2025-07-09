@@ -7,6 +7,7 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <!-- Tailwind via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -20,6 +21,137 @@
             }
         }
     </script>
+    <!-- ------------------------------------------ -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom Alert/Notification Styles */
+        .custom-alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background-color: rgb(255, 60, 77);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideInRight 0.3s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .custom-alert .close-btn {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+        
+        .custom-alert .close-btn:hover {
+            opacity: 1;
+        }
+        
+        /* Keep existing styles */
+        .scanner-active { 
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; 
+        }
+        .slide-in {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .success-glow {
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+        }
+        .error-glow {
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+        #qr-reader {
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .instruction-step {
+            transition: all 0.3s ease;
+        }
+        .instruction-step:hover {
+            transform: translateX(4px);
+        }
+        /* QR Scanner specific styles */
+        #qr-reader__dashboard_section {
+            display: none !important;
+        }
+        #qr-reader__scan_region {
+            border-radius: 12px;
+        }
+        /* Message styles */
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease-out;
+        }
+        .message.success {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+        .message.error {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+        .message.warning {
+            background-color: #fffbeb;
+            border: 1px solid #fed7aa;
+            color: #92400e;
+        }
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        /* Status indicators */
+        .status-active {
+            background-color: #22c55e;
+            animation: pulse 2s infinite;
+        }
+        .status-inactive {
+            background-color: #94a3b8;
+        }
+        .status-warning {
+            background-color: #f59e0b;
+            animation: pulse 2s infinite;
+        }
+        .status-error {
+            background-color: #ef4444;
+            animation: pulse 2s infinite;
+        }
+        .status-success {
+            background-color: #22c55e;
+        }
+        .status-ready {
+            background-color: #3b82f6;
+            animation: pulse 2s infinite;
+        }
+    </style>
+    <!-- ------------------------------------------ -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -197,6 +329,11 @@
                     </div>
                 </div>
 
+                <div class="mt-4 text-center">
+                    <label for="qr-image-upload" class="block text-sm font-medium text-gray-700 mb-2">Or Upload QR Image</label>
+                    <input type="file" accept="image/*" id="qr-image-upload" class="block mx-auto text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark">
+                </div>
+
                 <!-- User Information Card -->
                 <div id="form-card" class="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
                     <div class="flex items-center justify-between mb-4 sm:mb-6">
@@ -365,27 +502,7 @@
     </div>
 
     <!-- Success/Error Messages -->
-    <div id="message-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
-
-    <!-- Pass data to JavaScript -->
-    <!-- <script>
-        // Pass server data to JavaScript
-        window.serverData = {
-            currentUser: {% if session.get('user_id') %}
-                {
-                    id: {{ session.get('user_id') }},
-                    full_name: "{{ session.get('user_name', '') }}",
-                    mobile: "{{ session.get('user_mobile', '') }}",
-                    employee_id: "{{ session.get('user_employee_id', '') }}",
-                    department: "{{ session.get('user_department', '') }}"
-                }
-            {% else %}
-                null
-            {% endif %},
-            attendanceStatus: {{ attendance_status|tojson if attendance_status else 'null' }}
-        };
-    </script> -->
-    
+    <div id="message-container" class="fixed top-4 right-4 z-50 space-y-2"></div>    
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
