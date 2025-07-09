@@ -24,6 +24,9 @@ async function initializeApp() {
     
     // Request location permission early
     await requestLocationPermission();
+
+    //Primary Check for Temp Data.
+    primary_check()
     
     // Check if user data exists in temporary storage
     checkTempUserData();
@@ -123,6 +126,15 @@ async function handleAuthorizedUser() {
     } else {
         // No user data in temp storage, show registration form
         await handleUnregisteredUser();
+    }
+}
+function primary_check(){
+    const tempData = localStorage.getItem('tempUserData');
+    console.log('Temporary user data:', tempData);
+    if (!tempData) {
+        console.log('No temporary user data found');
+        alert("No user data found. Scan the QR code to register your details, then scan again to mark your attendance.");
+        return null;
     }
 }
 
