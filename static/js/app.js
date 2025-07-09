@@ -1,7 +1,7 @@
 // app.js
 // Configuration
 const MATCH_QR_STRING = "f29cZb7Q6DuaMjYkTLV3nxR9KEqV2XoBslrHcwA8d1tZ5UeqgiWTvjNpLEsQ";
-const API_BASE_URL = "https://qr-attendance-2xfa.onrender.com";
+const API_BASE_URL = "http://localhost:5000";
 
 // State variables
 let qrScanner = null;
@@ -24,11 +24,9 @@ async function initializeApp() {
     
     // Request location permission early
     await requestLocationPermission();
-
-    //Primary Check for Temp Data.
-    primary_check()
     
     // Check if user data exists in temporary storage
+    primary_check()
     checkTempUserData();
     
     // Start QR scanner immediately as per workflow
@@ -152,6 +150,7 @@ function checkTempUserData() {
         }
     }
     return null;
+    
 }
 
 // ============ STEP 3: IF NOT REGISTERED - COLLECT USER DETAILS ============
