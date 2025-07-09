@@ -140,11 +140,11 @@
 import gspread
 from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
-from database import get_supabase_client
+from database import get_connection
 
 
 def export_to_google_sheet():
-    supabase = get_supabase_client()
+    supabase = get_connection()
     if not supabase:
         print(" Failed to connect to Supabase")
         return
