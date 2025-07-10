@@ -500,7 +500,7 @@ async function handleUserRegistration(event) {
     // Update heading to "QR Scanner" when form is submitted
     const heading = document.getElementById("main-heading");
     if (heading) {
-        heading.textContent = "QR Scanner";
+        heading.textContent = "Scan the QR to mark attendance";
     }
     
     const formData = {
