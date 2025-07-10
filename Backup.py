@@ -3,7 +3,10 @@ import gspread
 from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
 from database import get_connection
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
 
 def export_to_google_sheet():
     supabase = get_connection()
@@ -53,23 +56,29 @@ def export_to_google_sheet():
 
         print(f"Prepared {len(rows)} rows for export")
 
-        # Step 2: Get service account file path and load credentials
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        service_account_path = os.path.join(script_dir, "service_account.json")
-        
-        print(f"Looking for service account file at: {service_account_path}")
-        
-        if not os.path.exists(service_account_path):
-            print(f"service_account.json not found at: {service_account_path}")
-            print("Please create the service_account.json file in the same directory as this script.")
-            return
+        private_key_raw =  os.getenv("GOOGLE_PRIVATE_KEY")
+        private_key_raw = private_key_raw.replace("\\n","\n")
+        service_account_data = {
+            "type": os.getenv("GCP_TYPE"),
+            "project_id": os.getenv("GCP_PROJECT_ID"),
+            "private_key_id": os.getenv("GCP_PRIVATE_KEY_ID"),
+            "private_key": private_key_raw,
+            "client_email": os.getenv("GCP_CLIENT_EMAIL"),
+            "client_id": os.getenv("GCP_CLIENT_ID"),
+            "auth_uri": os.getenv("GCP_AUTH_URI"),
+            "token_uri": os.getenv("GCP_TOKEN_URI"),
+            "auth_provider_x509_cert_url": os.getenv("GCP_AUTH_PROVIDER_CERT_URL"),
+            "client_x509_cert_url": os.getenv("GCP_CLIENT_CERT_URL"),
+            "universe_domain": os.getenv("GCP_UNIVERSE_DOMAIN"),
+        }
+
 
         scope = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
-        
-        creds = ServiceAccountCredentials.from_json_keyfile_name(service_account_path, scope)
+
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account_data, scope)
         client = gspread.authorize(creds)
         print("Google Sheets client authorized successfully.")
 
