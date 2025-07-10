@@ -3,10 +3,12 @@ from Backup import export_to_google_sheet as backup
 from models import UserRegister, AttendanceAction, CheckStatusRequest
 from flask import Flask, request, jsonify, render_template
 from database import get_connection
+from oauth2client.service_account import ServiceAccountCredentials
 from flask_cors import CORS
 from datetime import datetime, date
 from supabase import create_client
 from dotenv import load_dotenv
+import gspread
 import os
 
 load_dotenv()
@@ -17,7 +19,8 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__)
-CORS(app, origins=["https://qr-attendance-9jq0.onrender.com"])
+CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*"}})
+
 
 @app.route("/")
 def home():
@@ -89,6 +92,8 @@ def check_status():
             .eq("id", user_id) \
             .execute()
 
+        backup()
+
         if not emp_lookup.data:
             return jsonify({"error": "Employee not found"}), 404
 
@@ -101,6 +106,7 @@ def check_status():
             .eq("date", today) \
             .execute()
 
+        backup()
         if not res.data:
             return jsonify({"status": "not_checked_in"})
 
@@ -214,11 +220,11 @@ def check_out():
             .eq("date", today) \
             .is_("check_out_time", "null") \
             .execute()
-        backup()
 
         if not update_res.data:
             return jsonify({"error": "No active check-in found or already checked out"}), 400
 
+        backup()
         return jsonify({
             "message": "Check-out successful",
             "check_out_time": update_res.data[0]["check_out_time"]
