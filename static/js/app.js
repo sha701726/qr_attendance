@@ -27,12 +27,15 @@ async function initializeApp() {
     
     // Setup gallery upload
     setupGalleryUpload();
+
+    // Setup form submission
+    setupFormSubmission();
     
     // Request location permission early
     await requestLocationPermission();
     
     // Check if user data exists in temporary storage
-    primary_check()
+    await primary_check()
     checkTempUserData();
     
     // Update status
@@ -60,7 +63,7 @@ function setupCameraToggle() {
         toggleButton.innerHTML = `
             <div class="flex items-center justify-center space-x-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
                 <span>Start Camera</span>
@@ -338,7 +341,7 @@ async function handleAuthorizedUser() {
         isUserRegistered = true;
         await processAttendance();
     } else {
-        // No user data in temp storage, show registration form
+        // No user data in temp storage, enable registration form
         await handleUnregisteredUser();
     }
 }
@@ -349,8 +352,17 @@ function primary_check(){
     if (!tempData) {
         console.log('No temporary user data found');
         showMessage("No user data found. Scan the Qr to activate the form.", 'warning');
+        // Update the heading dynamically
+        const heading = document.getElementById("main-heading");
+        if (heading) {
+            heading.textContent = "Scan the QR to activate the form";
+            // heading.textContent = "Smart QR Attendance";
+        }
+        // Disable the form until QR is scanned
+        disableForm();
         return null;
     }
+
 }
 
 function checkTempUserData() {
@@ -369,9 +381,74 @@ function checkTempUserData() {
     return null;
 }
 
+// ============ FORM DISABLE/ENABLE FUNCTIONS ============
+function disableForm() {
+    if (!userFormCard) return;
+    
+    // Disable all form inputs
+    const formInputs = userFormCard.querySelectorAll('input, button, select');
+    formInputs.forEach(input => {
+        input.disabled = true;
+        input.classList.add('opacity-50', 'cursor-not-allowed');
+    });
+    
+    // Add visual indication that form is disabled
+    const formTitle = userFormCard.querySelector('h2');
+    if (formTitle) {
+        formTitle.textContent = 'Employee Registration (QR Scan Required)';
+        formTitle.classList.add('text-gray-500');
+        formTitle.classList.remove('text-gray-900');
+    }
+    
+    // Disable the entire form
+    const form = userFormCard.querySelector('form');
+    if (form) {
+        form.style.pointerEvents = 'none';
+        form.classList.add('opacity-50');
+    }
+}
+
+function enableForm() {
+    if (!userFormCard) return;
+    
+    console.log('Enabling form...');
+    
+    // Enable all form inputs
+    const formInputs = userFormCard.querySelectorAll('input, button, select');
+    formInputs.forEach(input => {
+        input.disabled = false;
+        input.classList.remove('opacity-50', 'cursor-not-allowed');
+    });
+    
+    // Remove visual indication
+    const formTitle = userFormCard.querySelector('h2');
+    if (formTitle) {
+        formTitle.textContent = 'Employee Registration';
+        formTitle.classList.remove('text-gray-500');
+        formTitle.classList.add('text-gray-900');
+    }
+    
+    // Enable the entire form
+    const form = userFormCard.querySelector('form');
+    if (form) {
+        form.style.pointerEvents = 'auto';
+        form.classList.remove('opacity-50');
+    }
+    
+    // Make sure the form card is fully interactive
+    userFormCard.style.pointerEvents = 'auto';
+    userFormCard.classList.remove('opacity-50');
+    
+    // Update the main heading to "Form Activated"
+    const heading = document.getElementById("main-heading");
+    if (heading) {
+        heading.textContent = "Form Activated";
+    }
+}
+
 // ============ STEP 3: IF NOT REGISTERED - COLLECT USER DETAILS ============
 async function handleUnregisteredUser() {
-    console.log('User not registered, showing registration form');
+    console.log('User not registered, enabling registration form');
     
     // Stop QR scanner temporarily
     await stopQRScanner();
@@ -392,7 +469,8 @@ async function handleUnregisteredUser() {
         toggleBtn.className = 'w-full mt-4 bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2';
     }
     
-    // Show registration form
+    // Enable and show registration form
+    enableForm();
     showUserRegistrationForm();
     
     updateStatus('Please fill in your details to register');
@@ -418,6 +496,12 @@ function showUserRegistrationForm() {
 
 async function handleUserRegistration(event) {
     event.preventDefault();
+    
+    // Update heading to "QR Scanner" when form is submitted
+    const heading = document.getElementById("main-heading");
+    if (heading) {
+        heading.textContent = "QR Scanner";
+    }
     
     const formData = {
         fullName: document.getElementById('fullName').value.trim(),
@@ -700,39 +784,47 @@ function updateStatus(message) {
 function showMessage(message, type) {
     console.log(`${type.toUpperCase()}: ${message}`);
     
-    // Create message container if it doesn't exist
-    let messageContainer = document.getElementById('message-container');
-    if (!messageContainer) {
-        messageContainer = document.createElement('div');
-        messageContainer.id = 'message-container';
-        messageContainer.className = 'fixed top-4 right-4 z-50 space-y-2';
-        document.body.appendChild(messageContainer);
+    const messageContainer = document.getElementById('message-container');
+    if (messageContainer) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `p-4 rounded-lg mb-4 ${getMessageClass(type)}`;
+        messageDiv.textContent = message;
+        
+        messageContainer.appendChild(messageDiv);
+        
+        // Auto-remove message after 5 seconds
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.parentNode.removeChild(messageDiv);
+            }
+        }, 5000);
     }
-    
-    // Create message element
-    const messageElement = document.createElement('div');
-    messageElement.className = `message ${type}`;
-    messageElement.textContent = message;
-    
-    // Add to container
-    messageContainer.appendChild(messageElement);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (messageElement.parentNode) {
-            messageElement.parentNode.removeChild(messageElement);
-        }
-    }, 5000);
 }
 
+function getMessageClass(type) {
+    switch (type) {
+        case 'success':
+            return 'bg-green-100 text-green-800 border border-green-200';
+        case 'error':
+            return 'bg-red-100 text-red-800 border border-red-200';
+        case 'warning':
+            return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+        case 'info':
+            return 'bg-blue-100 text-blue-800 border border-blue-200';
+        default:
+            return 'bg-gray-100 text-gray-800 border border-gray-200';
+    }
+}
+
+// Location permission request
 async function requestLocationPermission() {
     try {
-        if ('geolocation' in navigator) {
+        if (navigator.geolocation) {
             const position = await new Promise((resolve, reject) => {
                 navigator.geolocation.getCurrentPosition(resolve, reject, {
                     enableHighAccuracy: true,
                     timeout: 10000,
-                    maximumAge: 300000
+                    maximumAge: 60000
                 });
             });
             
@@ -742,21 +834,22 @@ async function requestLocationPermission() {
                 accuracy: position.coords.accuracy
             };
             
-            console.log('Location permission granted:', currentLocation);
+            console.log('Location permission granted');
             return true;
         } else {
             console.log('Geolocation not supported');
             return false;
         }
     } catch (error) {
-        console.error('Location permission denied:', error);
+        console.error('Location permission error:', error);
         return false;
     }
 }
 
-// ============ CLEANUP ON PAGE UNLOAD ============
-window.addEventListener('beforeunload', async () => {
-    if (qrScanner) {
-        await stopQRScanner();
+// Form submission setup
+function setupFormSubmission() {
+    const form = document.getElementById('user-form');
+    if (form) {
+        form.addEventListener('submit', handleUserRegistration);
     }
-});
+}
