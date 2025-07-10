@@ -19,8 +19,9 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__)
-# https://qr-attendance-sy8f.onrender.com
-CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "https://qr-attendance-sy8f.onrender.com"}})
+CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*"}})
+
+
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -91,8 +92,6 @@ def check_status():
             .eq("id", user_id) \
             .execute()
 
-        backup()
-
         if not emp_lookup.data:
             return jsonify({"error": "Employee not found"}), 404
 
@@ -104,8 +103,7 @@ def check_status():
             .eq("employee_id", employee_id) \
             .eq("date", today) \
             .execute()
-
-        backup()
+        
         if not res.data:
             return jsonify({"status": "not_checked_in"})
 
@@ -132,6 +130,7 @@ def check_status():
 @app.route("/api/check-in", methods=["POST"])
 def check_in():
     try:
+        backup()
         data = request.json
         attendance = AttendanceAction(**data)
         user_id = attendance.user_id  # This is the internal `id`
@@ -219,11 +218,10 @@ def check_out():
             .eq("date", today) \
             .is_("check_out_time", "null") \
             .execute()
-
+        
+        backup()
         if not update_res.data:
             return jsonify({"error": "No active check-in found or already checked out"}), 400
-
-        backup()
         return jsonify({
             "message": "Check-out successful",
             "check_out_time": update_res.data[0]["check_out_time"]
