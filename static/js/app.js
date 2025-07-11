@@ -350,7 +350,6 @@ function primary_check(){
     const tempData = localStorage.getItem('tempUserData');
     console.log('Temporary user data:', tempData);
     if (!tempData) {
-        console.log('No temporary user data found');
         showMessage("No user data found. Scan the Qr to activate the form.", 'warning');
         // Update the heading dynamically
         const heading = document.getElementById("main-heading");
