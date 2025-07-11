@@ -18,11 +18,11 @@ let qrReaderElement, userFormCard, userInfoDisplay, statusDisplay;
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 async function initializeApp() {
+    disableForm();
     console.log('Starting QR Attendance App...');
-
+    
     // Initialize DOM elements
     initDOMElements();
-    disableForm();
 
     // Setup camera toggle button
     setupCameraToggle();
