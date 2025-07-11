@@ -1,7 +1,7 @@
 // app.js
 // Configuration
 const MATCH_QR_STRING = "f29cZb7Q6DuaMjYkTLV3nxR9KEqV2XoBslrHcwA8d1tZ5UeqgiWTvjNpLEsQ";
-const API_BASE_URL = "https://qr-attendance-9jq0.onrender.com";
+const API_BASE_URL = "https://qr-attendance-sy8f.onrender.com";
 
 // State variables
 let qrScanner = null;
@@ -22,15 +22,10 @@ async function initializeApp() {
 
     // Initialize DOM elements
     initDOMElements();
+    disableForm();
 
     // Setup camera toggle button
     setupCameraToggle();
-
-    // Setup gallery upload
-    setupGalleryUpload();
-
-    // Setup form submission
-    setupFormSubmission();
 
     // Request location permission early
     await requestLocationPermission();
@@ -38,6 +33,12 @@ async function initializeApp() {
     // Check if user data exists in temporary storage
     await primary_check()
     checkTempUserData();
+
+    // Setup gallery upload
+    setupGalleryUpload();
+
+    // Setup form submission
+    setupFormSubmission();
 
     // Update status
     updateStatus('Ready - Toggle camera or upload QR image');
@@ -277,9 +278,6 @@ async function handleQRCodeScan(qrCode) {
 
     scanCooldown = true;
     setTimeout(() => { scanCooldown = false; }, 2000);
-
-    console.log('QR Code processed:', qrCode);
-
     // Check if it's an authorized QR code
     if (qrCode === MATCH_QR_STRING) {
         updateStatus('Authorized QR code detected!');
@@ -338,6 +336,7 @@ async function handleAuthorizedUser() {
 
     if (tempUserData && tempUserData.id) {
         // User data exists in temp storage, proceed with attendance
+        // disableForm();
         currentUser = tempUserData;
         isUserRegistered = true;
         await processAttendance();
@@ -369,6 +368,7 @@ function primary_check(){
 function checkTempUserData() {
     const tempData = localStorage.getItem('tempUserData');
     console.log('Temporary user data:', tempData);
+    disableForm()
     if (tempData) {
         try {
             const userData = JSON.parse(tempData);
@@ -386,33 +386,78 @@ function checkTempUserData() {
 function disableForm() {
     if (!userFormCard) return;
 
+    userFormCard.style.display = 'none';
     // Disable all form inputs
-    const formInputs = userFormCard.querySelectorAll('input, button, select');
-    formInputs.forEach(input => {
-        input.disabled = true;
-        input.classList.add('opacity-50', 'cursor-not-allowed');
-    });
+    // const formInputs = userFormCard.querySelectorAll('input, button, select');
+    // formInputs.forEach(input => {
+    //     input.disabled = true;
+    //     input.classList.add('opacity-50', 'cursor-not-allowed');
+    // });
 
     // Add visual indication that form is disabled
-    const formTitle = userFormCard.querySelector('h2');
-    if (formTitle) {
-        formTitle.textContent = 'Employee Registration (QR Scan Required)';
-        formTitle.classList.add('text-gray-500');
-        formTitle.classList.remove('text-gray-900');
-    }
+    // const formTitle = userFormCard.querySelector('h2');
+    // if (formTitle) {
+    //     formTitle.textContent = 'Employee Registration (QR Scan Required)';
+    //     formTitle.classList.add('text-gray-500');
+    //     formTitle.classList.remove('text-gray-900');
+    // }
 
     // Disable the entire form
-    const form = userFormCard.querySelector('form');
-    if (form) {
-        form.style.pointerEvents = 'none';
-        form.classList.add('opacity-50');
-    }
+    // const form = userFormCard.querySelector('form');
+    // if (form) {
+    //     form.style.pointerEvents = 'none';
+    //     form.classList.add('opacity-50');
+    // }
 }
 
+//Old function
+// function enableForm() {
+//     if (!userFormCard) return;
+
+//     console.log('Enabling form...');
+
+//     // Enable all form inputs
+//     const formInputs = userFormCard.querySelectorAll('input, button, select');
+//     formInputs.forEach(input => {
+//         input.disabled = false;
+//         input.classList.remove('opacity-50', 'cursor-not-allowed');
+//     });
+
+//     // Remove visual indication
+//     const formTitle = userFormCard.querySelector('h2');
+//     if (formTitle) {
+//         formTitle.textContent = 'Employee Registration';
+//         formTitle.classList.remove('text-gray-500');
+//         formTitle.classList.add('text-gray-900');
+//     }
+
+//     // Enable the entire form
+//     const form = userFormCard.querySelector('form');
+//     if (form) {
+//         form.style.pointerEvents = 'auto';
+//         form.classList.remove('opacity-50');
+//     }
+
+//     // Make sure the form card is fully interactive
+//     userFormCard.style.pointerEvents = 'auto';
+//     userFormCard.classList.remove('opacity-50');
+
+//     // Update the main heading to "Form Activated"
+//     const heading = document.getElementById("main-heading");
+//     if (heading) {
+//         heading.textContent = "Form Activated";
+//     }
+// }
+
+// new function:
 function enableForm() {
     if (!userFormCard) return;
 
     console.log('Enabling form...');
+
+    // Make the form card visible again
+    userFormCard.style.display = 'block'; // Show the element if it was hidden using display:none
+    // userFormCard.classList.remove('hidden'); // If you used Tailwind's 'hidden' class instead
 
     // Enable all form inputs
     const formInputs = userFormCard.querySelectorAll('input, button, select');
@@ -421,7 +466,7 @@ function enableForm() {
         input.classList.remove('opacity-50', 'cursor-not-allowed');
     });
 
-    // Remove visual indication
+    // Restore form title
     const formTitle = userFormCard.querySelector('h2');
     if (formTitle) {
         formTitle.textContent = 'Employee Registration';
@@ -429,23 +474,24 @@ function enableForm() {
         formTitle.classList.add('text-gray-900');
     }
 
-    // Enable the entire form
+    // Re-enable the entire form
     const form = userFormCard.querySelector('form');
     if (form) {
         form.style.pointerEvents = 'auto';
         form.classList.remove('opacity-50');
     }
 
-    // Make sure the form card is fully interactive
+    // Make sure the form card is fully interactive and visible
     userFormCard.style.pointerEvents = 'auto';
     userFormCard.classList.remove('opacity-50');
 
-    // Update the main heading to "Form Activated"
+    // Update the main heading
     const heading = document.getElementById("main-heading");
     if (heading) {
         heading.textContent = "Form Activated";
     }
 }
+
 
 // ============ STEP 3: IF NOT REGISTERED - COLLECT USER DETAILS ============
 async function handleUnregisteredUser() {
@@ -550,7 +596,7 @@ async function handleUserRegistration(event) {
 
             isUserRegistered = true;
             currentUser = userData;
-
+            disableForm();
             if (result.existing_user) {
                 showMessage('User already registered! Please scan the QR code again.', 'info');
             } else {
