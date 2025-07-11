@@ -2,6 +2,7 @@
 // Configuration
 const MATCH_QR_STRING = "f29cZb7Q6DuaMjYkTLV3nxR9KEqV2XoBslrHcwA8d1tZ5UeqgiWTvjNpLEsQ";
 const API_BASE_URL = "https://qr-attendance-9jq0.onrender.com";
+
 // State variables
 let qrScanner = null;
 let currentUser = null;
@@ -18,30 +19,30 @@ document.addEventListener('DOMContentLoaded', initializeApp);
 
 async function initializeApp() {
     console.log('Starting QR Attendance App...');
-    
+
     // Initialize DOM elements
     initDOMElements();
-    
+
     // Setup camera toggle button
     setupCameraToggle();
-    
+
     // Setup gallery upload
     setupGalleryUpload();
 
     // Setup form submission
     setupFormSubmission();
-    
+
     // Request location permission early
     await requestLocationPermission();
-    
+
     // Check if user data exists in temporary storage
     await primary_check()
     checkTempUserData();
-    
+
     // Update status
     updateStatus('Ready - Toggle camera or upload QR image');
     updateScannerStatus('inactive');
-    
+
     isAppInitialized = true;
 }
 
@@ -76,7 +77,7 @@ function setupCameraToggle() {
 
 async function toggleCamera() {
     const toggleBtn = document.getElementById('camera-toggle-btn');
-    
+
     if (!isCameraActive) {
         // Start camera
         await startQRScanner();
@@ -109,7 +110,7 @@ async function toggleCamera() {
         `;
         toggleBtn.className = 'w-full mt-4 bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2';
         updateScannerStatus('inactive');
-        
+
         // Reset QR reader display
         qrReaderElement.innerHTML = `
             <div class="text-center text-gray-500">
@@ -151,22 +152,22 @@ async function handleGalleryUpload(event) {
                 // Create canvas to process image
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                
+
                 canvas.width = img.width;
                 canvas.height = img.height;
                 ctx.drawImage(img, 0, 0);
 
                 // Get image data for QR detection
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                
+
                 // Use jsQR library to detect QR code
                 const code = jsQR(imageData.data, canvas.width, canvas.height);
-                
+
                 if (code) {
                     console.log('QR code detected from gallery:', code.data);
                     showMessage('QR code detected from image!', 'success');
                     updateStatus('QR code found in image');
-                    
+
                     // Process the QR code using the same handler
                     handleQRCodeScan(code.data);
                 } else {
@@ -181,24 +182,24 @@ async function handleGalleryUpload(event) {
                 updateScannerStatus('inactive');
             }
         };
-        
+
         img.onerror = function() {
             showMessage('Error loading image. Please try another file.', 'error');
             updateStatus('Error loading image');
             updateScannerStatus('inactive');
         };
-        
+
         img.src = e.target.result;
     };
-    
+
     reader.onerror = function() {
         showMessage('Error reading file. Please try again.', 'error');
         updateStatus('Error reading file');
         updateScannerStatus('inactive');
     };
-    
+
     reader.readAsDataURL(file);
-    
+
     // Clear the input
     event.target.value = '';
 }
@@ -209,10 +210,10 @@ async function startQRScanner() {
         if (qrScanner) {
             await stopQRScanner();
         }
-        
+
         qrReaderElement.innerHTML = '';
         qrScanner = new Html5Qrcode("qr-reader");
-        
+
         const config = {
             fps: 10,
             qrbox: { width: 250, height: 250 },
@@ -230,13 +231,13 @@ async function startQRScanner() {
 
         updateStatus('Camera active - Please scan QR code');
         updateScannerStatus('active');
-        
+
     } catch (error) {
         console.error('Error starting QR scanner:', error);
         updateStatus('Camera Error - Please check permissions or try gallery upload');
         updateScannerStatus('error');
         isCameraActive = false;
-        
+
         // Reset button state
         const toggleBtn = document.getElementById('camera-toggle-btn');
         if (toggleBtn) {
@@ -273,12 +274,12 @@ async function handleQRCodeScan(qrCode) {
         console.log('Scan cooldown active, ignoring scan');
         return;
     }
-    
+
     scanCooldown = true;
     setTimeout(() => { scanCooldown = false; }, 2000);
-    
+
     console.log('QR Code processed:', qrCode);
-    
+
     // Check if it's an authorized QR code
     if (qrCode === MATCH_QR_STRING) {
         updateStatus('Authorized QR code detected!');
@@ -296,10 +297,10 @@ async function handleQRCodeScan(qrCode) {
 function updateScannerStatus(status) {
     const scannerDot = document.getElementById('scanner-dot');
     const scannerText = document.getElementById('scanner-text');
-    
+
     if (scannerDot && scannerText) {
         scannerDot.className = 'w-2 h-2 rounded-full';
-        
+
         switch (status) {
             case 'active':
                 scannerDot.classList.add('status-active');
@@ -331,10 +332,10 @@ function updateScannerStatus(status) {
 // ============ STEP 2: IF AUTHORIZED - CHECK TEMP STORAGE ============
 async function handleAuthorizedUser() {
     console.log('Authorized user detected');
-    
+
     // Check temp storage for existing user data
     const tempUserData = checkTempUserData();
-    
+
     if (tempUserData && tempUserData.id) {
         // User data exists in temp storage, proceed with attendance
         currentUser = tempUserData;
@@ -384,14 +385,14 @@ function checkTempUserData() {
 // ============ FORM DISABLE/ENABLE FUNCTIONS ============
 function disableForm() {
     if (!userFormCard) return;
-    
+
     // Disable all form inputs
     const formInputs = userFormCard.querySelectorAll('input, button, select');
     formInputs.forEach(input => {
         input.disabled = true;
         input.classList.add('opacity-50', 'cursor-not-allowed');
     });
-    
+
     // Add visual indication that form is disabled
     const formTitle = userFormCard.querySelector('h2');
     if (formTitle) {
@@ -399,7 +400,7 @@ function disableForm() {
         formTitle.classList.add('text-gray-500');
         formTitle.classList.remove('text-gray-900');
     }
-    
+
     // Disable the entire form
     const form = userFormCard.querySelector('form');
     if (form) {
@@ -410,16 +411,16 @@ function disableForm() {
 
 function enableForm() {
     if (!userFormCard) return;
-    
+
     console.log('Enabling form...');
-    
+
     // Enable all form inputs
     const formInputs = userFormCard.querySelectorAll('input, button, select');
     formInputs.forEach(input => {
         input.disabled = false;
         input.classList.remove('opacity-50', 'cursor-not-allowed');
     });
-    
+
     // Remove visual indication
     const formTitle = userFormCard.querySelector('h2');
     if (formTitle) {
@@ -427,18 +428,18 @@ function enableForm() {
         formTitle.classList.remove('text-gray-500');
         formTitle.classList.add('text-gray-900');
     }
-    
+
     // Enable the entire form
     const form = userFormCard.querySelector('form');
     if (form) {
         form.style.pointerEvents = 'auto';
         form.classList.remove('opacity-50');
     }
-    
+
     // Make sure the form card is fully interactive
     userFormCard.style.pointerEvents = 'auto';
     userFormCard.classList.remove('opacity-50');
-    
+
     // Update the main heading to "Form Activated"
     const heading = document.getElementById("main-heading");
     if (heading) {
@@ -449,11 +450,11 @@ function enableForm() {
 // ============ STEP 3: IF NOT REGISTERED - COLLECT USER DETAILS ============
 async function handleUnregisteredUser() {
     console.log('User not registered, enabling registration form');
-    
+
     // Stop QR scanner temporarily
     await stopQRScanner();
     isCameraActive = false;
-    
+
     // Reset camera button
     const toggleBtn = document.getElementById('camera-toggle-btn');
     if (toggleBtn) {
@@ -468,11 +469,11 @@ async function handleUnregisteredUser() {
         `;
         toggleBtn.className = 'w-full mt-4 bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2';
     }
-    
+
     // Enable and show registration form
     enableForm();
     showUserRegistrationForm();
-    
+
     updateStatus('Please fill in your details to register');
     updateScannerStatus('inactive');
 }
@@ -481,11 +482,11 @@ function showUserRegistrationForm() {
     if (userFormCard) {
         userFormCard.style.display = 'block';
     }
-    
+
     if (userInfoDisplay) {
         userInfoDisplay.style.display = 'none';
     }
-    
+
     // Setup form submission
     const form = document.getElementById('user-form');
     if (form) {
@@ -496,28 +497,28 @@ function showUserRegistrationForm() {
 
 async function handleUserRegistration(event) {
     event.preventDefault();
-    
+
     // Update heading to "QR Scanner" when form is submitted
     const heading = document.getElementById("main-heading");
     if (heading) {
         heading.textContent = "Scan the QR to mark attendance";
     }
-    
+
     const formData = {
         fullName: document.getElementById('fullName').value.trim(),
         mobile: document.getElementById('mobile').value.trim(),
         employeeId: document.getElementById('employeeId').value.trim(),
         department: document.getElementById('department').value.trim()
     };
-    
+
     // Validate form data
     if (!validateUserData(formData)) {
         return;
     }
-    
+
     try {
         updateStatus('Checking/Registering user...');
-        
+
         // Try to register user (Flask backend will handle existing users)
         const response = await fetch('/api/register', {
             method: 'POST',
@@ -526,16 +527,16 @@ async function handleUserRegistration(event) {
             },
             body: JSON.stringify(formData)
         });
-        
+
         const result = await response.json();
-        
+
         if (response.ok) {
             // Registration successful or user already exists
             const userData = {
                 ...formData,
                 id: result.user_id
             };
-            
+
             // If user already existed, use the returned user data
             if (result.existing_user && result.user_data) {
                 userData.fullName = result.user_data.fullName;
@@ -543,29 +544,29 @@ async function handleUserRegistration(event) {
                 userData.employeeId = result.user_data.employeeId;
                 userData.department = result.user_data.department;
             }
-            
+
             // Save to temp storage
             localStorage.setItem('tempUserData', JSON.stringify(userData));
-            
+
             isUserRegistered = true;
             currentUser = userData;
-            
+
             if (result.existing_user) {
                 showMessage('User already registered! Please scan the QR code again.', 'info');
             } else {
                 showMessage('Registration successful! Please scan the QR code again.', 'success');
             }
-            
+
             // Update form status
             updateFormStatus('success');
-            
+
             updateStatus('Registration complete - Ready to scan QR code');
-            
+
         } else {
             showMessage(result.error || 'Registration failed', 'error');
             updateFormStatus('error');
         }
-        
+
     } catch (error) {
         console.error('Registration error:', error);
         showMessage('Registration failed. Please try again.', 'error');
@@ -576,10 +577,10 @@ async function handleUserRegistration(event) {
 function updateFormStatus(status) {
     const formDot = document.getElementById('form-dot');
     const formText = document.getElementById('form-text');
-    
+
     if (formDot && formText) {
         formDot.className = 'w-2 h-2 rounded-full';
-        
+
         switch (status) {
             case 'success':
                 formDot.classList.add('status-success');
@@ -601,33 +602,53 @@ function validateUserData(data) {
         showMessage('Please fill in all required fields.', 'error');
         return false;
     }
-    
+
     const mobileRegex = /^[0-9]{10}$/;
     if (!mobileRegex.test(data.mobile)) {
         showMessage('Please enter a valid 10-digit mobile number.', 'error');
         return false;
     }
-    
+
     return true;
 }
 
 // ============ STEP 2: PROCESS ATTENDANCE ============
 async function processAttendance() {
     console.log('Processing attendance for registered user');
-    
+
     // Stop QR scanner during attendance process
     await stopQRScanner();
     isCameraActive = false;
-    
+
     // Show user info
     showUserInfo();
-    
+
     // Check current attendance status
     const attendanceStatus = await checkAttendanceStatus();
-    
-    // Ask for location and capture time
-    await captureLocationAndTime();
-    
+
+    // Require location before proceeding
+    const locationGranted = await captureLocationAndTime();
+    if (!locationGranted) {
+        showMessage('Location access is required for attendance. Please enable location permissions and try again.', 'error');
+        updateStatus('Location permission required');
+        
+        // Reset camera button
+        const toggleBtn = document.getElementById('camera-toggle-btn');
+        if (toggleBtn) {
+            toggleBtn.innerHTML = `
+                <div class="flex items-center justify-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span>Start Camera</span>
+                </div>
+            `;
+            toggleBtn.className = 'w-full mt-4 bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2';
+        }
+        return;  // ❌ Stop here if location not allowed
+    }
+
     // Process check-in or check-out based on current status
     if (attendanceStatus === 'not_checked_in') {
         await performCheckIn();
@@ -636,7 +657,7 @@ async function processAttendance() {
     } else {
         showMessage('Attendance already completed for today.', 'info');
     }
-    
+
     // Reset camera button after attendance
     const toggleBtn = document.getElementById('camera-toggle-btn');
     if (toggleBtn) {
@@ -644,14 +665,14 @@ async function processAttendance() {
             <div class="flex items-center justify-center space-x-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
-                <span>Start Camera</span>
-            </div>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            <span>Start Camera</span>
+        </div>
         `;
         toggleBtn.className = 'w-full mt-4 bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2';
     }
-    
+
     // Allow user to scan again after 3 seconds
     setTimeout(() => {
         updateStatus('Ready for next QR scan');
@@ -668,39 +689,45 @@ async function checkAttendanceStatus() {
             },
             body: JSON.stringify({ user_id: currentUser.id })
         });
-        
+
         if (response.ok) {
             const status = await response.json();
             return status.status;
         }
-        
+
     } catch (error) {
         console.error('Error checking attendance status:', error);
     }
-    
+
     return 'not_checked_in';
 }
 
 async function captureLocationAndTime() {
     updateStatus('Capturing location and time...');
-    
+
     // Use previously captured location or get new one
     if (!currentLocation) {
-        await requestLocationPermission();
+        const locationGranted = await requestLocationPermission();
+        if (!locationGranted) {
+            updateStatus('Location permission denied');
+            return false;
+        }
     }
-    
+
     if (currentLocation) {
         console.log('Location captured:', currentLocation);
         updateStatus('Location captured successfully');
+        return true;
     } else {
-        updateStatus('Warning: Location not available');
+        updateStatus('Location not available');
+        return false;
     }
 }
 
 async function performCheckIn() {
     try {
         updateStatus('Checking in...');
-        
+
         const response = await fetch('/api/check-in', {
             method: 'POST',
             headers: {
@@ -711,16 +738,16 @@ async function performCheckIn() {
                 location: currentLocation
             })
         });
-        
+
         const result = await response.json();
-        
+
         if (response.ok) {
             showMessage('Check-in successful!', 'success');
             updateStatus('Checked in successfully');
         } else {
             showMessage(result.error || 'Check-in failed', 'error');
         }
-        
+
     } catch (error) {
         console.error('Check-in error:', error);
         showMessage('Check-in failed. Please try again.', 'error');
@@ -730,7 +757,7 @@ async function performCheckIn() {
 async function performCheckOut() {
     try {
         updateStatus('Checking out...');
-        
+
         const response = await fetch('/api/check-out', {
             method: 'POST',
             headers: {
@@ -741,16 +768,16 @@ async function performCheckOut() {
                 location: currentLocation
             })
         });
-        
+
         const result = await response.json();
-        
+
         if (response.ok) {
             showMessage('Check-out successful!', 'success');
             updateStatus('Checked out successfully');
         } else {
             showMessage(result.error || 'Check-out failed', 'error');
         }
-        
+
     } catch (error) {
         console.error('Check-out error:', error);
         showMessage('Check-out failed. Please try again.', 'error');
@@ -783,15 +810,15 @@ function updateStatus(message) {
 
 function showMessage(message, type) {
     console.log(`${type.toUpperCase()}: ${message}`);
-    
+
     const messageContainer = document.getElementById('message-container');
     if (messageContainer) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `p-4 rounded-lg mb-4 ${getMessageClass(type)}`;
         messageDiv.textContent = message;
-        
+
         messageContainer.appendChild(messageDiv);
-        
+
         // Auto-remove message after 5 seconds
         setTimeout(() => {
             if (messageDiv.parentNode) {
@@ -827,13 +854,13 @@ async function requestLocationPermission() {
                     maximumAge: 60000
                 });
             });
-            
+
             currentLocation = {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
                 accuracy: position.coords.accuracy
             };
-            
+
             console.log('Location permission granted');
             return true;
         } else {
