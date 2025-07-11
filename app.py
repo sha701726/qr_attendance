@@ -8,18 +8,19 @@ from flask_cors import CORS
 from datetime import datetime, date
 from supabase import create_client
 from dotenv import load_dotenv
+import pytz
 import gspread
 import os
 
 load_dotenv()
 supabase = get_connection()
-
+ist = pytz.timezone('Asia/Kolkata')
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*"}})
+CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "https://qr-attendance-sy8f.onrender.com"}})
 
 
 @app.route("/")
@@ -167,7 +168,7 @@ def check_in():
         check_in_data = {
             "employee_id": employee_id,
             "date": today,
-            "check_in_time": datetime.now().isoformat(),
+            "check_in_time": datetime.now(ist).isoformat(),
             "check_in_location": location_str
         }
 
@@ -211,7 +212,7 @@ def check_out():
         # Step 3: Update the attendance row where employee_id and date match and check_out_time is NULL
         update_res = supabase.table("attendance") \
             .update({
-                "check_out_time": datetime.now().isoformat(),
+                "check_out_time": datetime.now(ist).isoformat(),
                 "check_out_location": location_str
             }) \
             .eq("employee_id", employee_id) \
