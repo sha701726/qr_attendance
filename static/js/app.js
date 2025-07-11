@@ -1,7 +1,12 @@
 // app.js
 // Configuration
+// const MATCH_QR_STRING = "f29cZb7Q6DuaMjYkTLV3nxR9KEqV2XoBslrHcwA8d1tZ5UeqgiWTvjNpLEsQ";
+// const API_BASE_URL = "http://localhost:5000";
+
+// app.js
+// Configuration
 const MATCH_QR_STRING = "f29cZb7Q6DuaMjYkTLV3nxR9KEqV2XoBslrHcwA8d1tZ5UeqgiWTvjNpLEsQ";
-const API_BASE_URL = "https://qr-attendance-sy8f.onrender.com";
+const API_BASE_URL = "https://qr-attendance-9jq0.onrender.com";
 
 // State variables
 let qrScanner = null;
@@ -18,11 +23,11 @@ let qrReaderElement, userFormCard, userInfoDisplay, statusDisplay;
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 async function initializeApp() {
-    disableForm();
     console.log('Starting QR Attendance App...');
-    
+
     // Initialize DOM elements
     initDOMElements();
+    disableForm();
 
     // Setup camera toggle button
     setupCameraToggle();
@@ -350,6 +355,7 @@ function primary_check(){
     const tempData = localStorage.getItem('tempUserData');
     console.log('Temporary user data:', tempData);
     if (!tempData) {
+        console.log('No temporary user data found');
         showMessage("No user data found. Scan the Qr to activate the form.", 'warning');
         // Update the heading dynamically
         const heading = document.getElementById("main-heading");
@@ -386,67 +392,7 @@ function disableForm() {
     if (!userFormCard) return;
 
     userFormCard.style.display = 'none';
-    // Disable all form inputs
-    // const formInputs = userFormCard.querySelectorAll('input, button, select');
-    // formInputs.forEach(input => {
-    //     input.disabled = true;
-    //     input.classList.add('opacity-50', 'cursor-not-allowed');
-    // });
-
-    // Add visual indication that form is disabled
-    // const formTitle = userFormCard.querySelector('h2');
-    // if (formTitle) {
-    //     formTitle.textContent = 'Employee Registration (QR Scan Required)';
-    //     formTitle.classList.add('text-gray-500');
-    //     formTitle.classList.remove('text-gray-900');
-    // }
-
-    // Disable the entire form
-    // const form = userFormCard.querySelector('form');
-    // if (form) {
-    //     form.style.pointerEvents = 'none';
-    //     form.classList.add('opacity-50');
-    // }
 }
-
-//Old function
-// function enableForm() {
-//     if (!userFormCard) return;
-
-//     console.log('Enabling form...');
-
-//     // Enable all form inputs
-//     const formInputs = userFormCard.querySelectorAll('input, button, select');
-//     formInputs.forEach(input => {
-//         input.disabled = false;
-//         input.classList.remove('opacity-50', 'cursor-not-allowed');
-//     });
-
-//     // Remove visual indication
-//     const formTitle = userFormCard.querySelector('h2');
-//     if (formTitle) {
-//         formTitle.textContent = 'Employee Registration';
-//         formTitle.classList.remove('text-gray-500');
-//         formTitle.classList.add('text-gray-900');
-//     }
-
-//     // Enable the entire form
-//     const form = userFormCard.querySelector('form');
-//     if (form) {
-//         form.style.pointerEvents = 'auto';
-//         form.classList.remove('opacity-50');
-//     }
-
-//     // Make sure the form card is fully interactive
-//     userFormCard.style.pointerEvents = 'auto';
-//     userFormCard.classList.remove('opacity-50');
-
-//     // Update the main heading to "Form Activated"
-//     const heading = document.getElementById("main-heading");
-//     if (heading) {
-//         heading.textContent = "Form Activated";
-//     }
-// }
 
 // new function:
 function enableForm() {
