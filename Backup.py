@@ -1,6 +1,6 @@
 # Backup.py
 import gspread
-from datetime import datetime
+from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
 from database import get_connection
 from dotenv import load_dotenv
@@ -15,7 +15,6 @@ def export_to_google_sheet():
         return
 
     try:
-        # Step 1: Fetch employee & attendance data
         print("Fetching employees...")
         emp_response = supabase.table("employees").select("*").execute()
         employees = emp_response.data
@@ -33,19 +32,33 @@ def export_to_google_sheet():
 
         headers = [
             "full_name", "mobile_no", "employee_id", "department_name",
-            "date", "check_in_time", "check_in_location", "check_out_time", "check_out_location"
+            "date", "day_type",
+            "check_in_time", "check_in_location", "check_out_time", "check_out_location"
         ]
         rows = []
+        all_dates = set()
+        sunday_dates = set()
 
         for att in attendance_records:
             emp = emp_dict.get(att["employee_id"])
             if emp:
+                try:
+                    date_obj = datetime.strptime(att["date"], "%Y-%m-%d")
+                    day_type = date_obj.strftime("%A")
+                    all_dates.add(att["date"])
+                    if day_type == "Sunday":
+                        sunday_dates.add(att["date"])  # track Sundays with attendance
+                except Exception as e:
+                    print(f"Error parsing date for employee_id {att['employee_id']}: {e}")
+                    continue
+
                 rows.append([
                     emp["full_name"],
                     emp["mobile_no"],
                     emp["employee_id"],
                     emp["department_name"],
                     att["date"],
+                    day_type,
                     att["check_in_time"],
                     att["check_in_location"],
                     att["check_out_time"],
@@ -54,11 +67,36 @@ def export_to_google_sheet():
             else:
                 print(f"Warning: No employee found for employee_id {att['employee_id']}")
 
-        print(f"Prepared {len(rows)} rows for export")
+        # Add blank Sunday rows (if not already added)
+        if all_dates:
+            min_date = datetime.strptime(min(all_dates), "%Y-%m-%d")
+            max_date = datetime.strptime(max(all_dates), "%Y-%m-%d")
+            current_date = min_date
 
-        # private_key_raw =  os.getenv("GOOGLE_PRIVATE_KEY")
-        private_key_raw = "-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDlSnh29PoFyNTn\\nA2NL7db2LIh71NPyf0bGljDATXGkQceih9d5gadRx++AxyJgbfVfNqccm1ZgiQIg\\nCZEoSsOG0pRLAW4Jfstz4MbekGb4K9ef1dzmIpJuuAx8FMlL2icMXg4bBjuF34Rb\\nW75dDGsP3GrZGEp9m3pMcnSzZ1sElcxjqc1DlJjJ0zZuPWEJeJFpONMpwh9m5rrA\\nwifJFJwE3qzI8le4M5TfaAvL2ftNiTwxSfkgHk1t68yM7fAyandQgOoduQRVGZch\\nII+yv758+cbTHifTECQJ88CnAJAaYv6v+l6n7dgCxkxyq+BeKj5A+E9tcUAJx4KM\\nJGlIJmlrAgMBAAECggEAC7quA+PPQGmAHpspQrKVev1XNAJ0nySMoc8ACm5LwGvP\\nAwzw5FnSDdhs84j8RLOLSEYa8Vcu6XxIvAvRPZ7pdqWiCV4220x9qt1WPv9jDRHt\\nE1OU277r/7bxiI1lqLgtpC/Rh+dfNx9yfVvplofymBqd6qIX+WnxLSTzvFOur8LD\\nI17hDqT3Y5UJScGOPH3j9TP9x2z/y2BHnwb/eF2dpBrTE8MR02E4eXi8ae1d+cJI\\nhfjZZxwOmX73anOybecdwpwiqDUtw7FBD++N8cDIGYFYN6jDAkLzZ1cMQp5YePMA\\niI3H3EiaboqX1KrknzTOyCw9ve2sna/+vmufYuqSpQKBgQD+QsTSg/Yd57XKoJtQ\\nrI7S0ijB0HlwEMiBhI2uQ0Hsz8FXAnEBfDrkPyn7h+UYyCJC3CrqJuPdCBXZJEvt\\n7eQ+fAGsMwuRF4+xy+S0qDWaAoxFTtn7UF8TabbD5xRKe8+hyqsrxjv/ShDsAcSo\\nAbnULxW7Tz8wFDiWJ2xcYueMtwKBgQDm2/o2nRok2+WwAmkPokb8KwQUmbYX4k+h\\nGcuX2TPaaTID1WJna1mQnbTaCWeMVpK+0g66EDdK0v0Xr7dcXa6HMoFcDZZG2KoZ\\nx0UavapDdXfzS016IS6NL8MlUqRyktFoTrOessYQ1fPtE/RyWYEtLGsx3d4tLYW6\\nJ4afFeP87QKBgEom3NHsTFXSYrEyf7laadjQE7TagOAO9PrY1p0Q3mQa/u7KNnzR\\nZzdzuGGz8ztz+pH3NcjOCLxIhF6seDxumZcjgTVgOapZ7b1TkmKhf+hnf9MiuO3T\\nNbcqqHOfq8pBK3+q5JrCmHLOffrmVR0OS8y24qaa6PmznAEmhDK5YYAnAoGAaESy\\nnjgWts8azoRIL2d76CkFjsheFiuBC6I68jqH0P3yOQkHiO5TZZ3VMSVOP3RakxUM\\n0bzBPGpPJYOXrYAic627/3ejiBwTt9DoxUsku5MyuhAoziBuhhYsbY8F9zmYmyPw\\nvJzCGJiJs2pv3bXPQjftsngjAQSugYWYqAGbF4ECgYEA9kgMTMtS7NRYStLuAt6S\\nsCUjPwNb+HNWA0l+mGu95EuihdJ3cVTsJnEAyaH+nDXn7JMVoSLKV+/BEc9vf/p1\\nZGPzDdmGahXs79w92YE0oog+eC4y4g4wnhY6qj/4vixXY9ZVfIvuYZBJqtF+TUkQ\\nbh2tljusySjT5YwVMbouJfA=\\n-----END PRIVATE KEY-----\\n"
-        private_key_raw = private_key_raw.replace("\\n","\n")
+            while current_date <= max_date:
+                if current_date.strftime("%A") == "Sunday":
+                    date_str = current_date.strftime("%Y-%m-%d")
+
+                    # Sunday entries already present for this date?
+                    has_sunday_rows = any(r[4] == date_str and r[5] == "Sunday" for r in rows)
+
+                    if not has_sunday_rows:
+                        # Add a blank Sunday row manually
+                        rows.append([
+                            "", "", "", "",
+                            date_str,
+                            "Sunday",
+                            "", "", "", ""
+                        ])
+                current_date += timedelta(days=1)
+
+        print(f"Final rows including all Sundays: {len(rows)}")
+
+        # Sort rows by date
+        rows.sort(key=lambda r: r[4])  # sort by 'date' column
+
+        # Google Sheets setup
+        private_key_raw = os.getenv("GOOGLE_PRIVATE_KEY").replace("\\n", "\n")
         service_account_data = {
             "type": os.getenv("GCP_TYPE"),
             "project_id": os.getenv("GCP_PROJECT_ID"),
@@ -73,7 +111,6 @@ def export_to_google_sheet():
             "universe_domain": os.getenv("GCP_UNIVERSE_DOMAIN"),
         }
 
-
         scope = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
@@ -83,15 +120,16 @@ def export_to_google_sheet():
         client = gspread.authorize(creds)
         print("Google Sheets client authorized successfully.")
 
-        # Step 3: Export to Google Sheet
         sheet = client.open("qr_attendance_data").sheet1
         sheet.clear()
         sheet.append_row(headers)
+        sheet.freeze(rows=1)
+        sheet.set_basic_filter()
 
         for row in rows:
             sheet.append_row([str(item) if item is not None else "" for item in row])
 
-        print(f"Successfully exported {len(rows)} attendance records to Google Sheet.")
+        print(f"Successfully exported {len(rows)} rows with complete Sunday adaptability to Google Sheet.")
 
     except Exception as e:
         print(f"Export error: {e}")
