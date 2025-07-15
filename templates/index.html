@@ -448,7 +448,6 @@
                         {% endif %}
                     </div>
                 </div>
-
                 <!-- Instructions Card -->
                 <div class="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
                     <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">How It Works</h2>
@@ -487,6 +486,34 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Help & Tutorial Section -->
+                <div class="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
+                    <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">Help & Tutorial</h2>
+                    
+                    <p class="text-gray-700 text-sm sm:text-base mb-4">Watch the videos below to learn how to register and mark your attendance.</p>
+
+                    <div class="space-y-6">
+                        <!-- Hindi Tutorial -->
+                        <div>
+                            <h3 class="text-sm sm:text-base font-semibold text-gray-800 mb-2">Hindi Tutorial</h3>
+                            <video controls class="w-full h-60 sm:h-72 rounded-lg border border-gray-300">
+                                <source src="{{ url_for('static', filename='videos/Hindi_voice.mp4') }}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+
+                        <!-- English Tutorial -->
+                        <div>
+                            <h3 class="text-sm sm:text-base font-semibold text-gray-800 mb-2">English Tutorial</h3>
+                            <video controls class="w-full h-60 sm:h-72 rounded-lg border border-gray-300">
+                                <source src="{{ url_for('static', filename='videos/English_voice.mp4') }}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </main>
