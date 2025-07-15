@@ -3,7 +3,7 @@
 // const MATCH_QR_STRING = "f29cZb7Q6DuaMjYkTLV3nxR9KEqV2XoBslrHcwA8d1tZ5UeqgiWTvjNpLEsQ";
 // const API_BASE_URL = "http://localhost:5000";
 
-// app.js
+// Script.js
 // Configuration
 const MATCH_QR_STRING = "f29cZb7Q6DuaMjYkTLV3nxR9KEqV2XoBslrHcwA8d1tZ5UeqgiWTvjNpLEsQ";
 const API_BASE_URL = "https://qr-attendance-9jq0.onrender.com";
@@ -617,6 +617,7 @@ async function processAttendance() {
     // Check current attendance status
     const attendanceStatus = await checkAttendanceStatus();
 
+
     // Require location before proceeding
     const locationGranted = await captureLocationAndTime();
     if (!locationGranted) {
@@ -637,16 +638,22 @@ async function processAttendance() {
             `;
             toggleBtn.className = 'w-full mt-4 bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2';
         }
-        return;  // ❌ Stop here if location not allowed
+        return;  // Stop here if location not allowed
     }
 
     // Process check-in or check-out based on current status
     if (attendanceStatus === 'not_checked_in') {
         await performCheckIn();
+        await updateStatusCard();  // After check-in, check-out, or registration
+
     } else if (attendanceStatus === 'checked_in') {
         await performCheckOut();
+        await updateStatusCard();  // After check-in, check-out, or registration
+
     } else {
         showMessage('Attendance already completed for today.', 'info');
+        await updateStatusCard();  // After check-in, check-out, or registration
+
     }
 
     // Reset camera button after attendance
@@ -682,8 +689,8 @@ async function checkAttendanceStatus() {
         });
 
         if (response.ok) {
-            const status = await response.json();
-            return status.status;
+            const result = await response.json();
+            return result.status;
         }
 
     } catch (error) {
@@ -692,6 +699,7 @@ async function checkAttendanceStatus() {
 
     return 'not_checked_in';
 }
+
 
 async function captureLocationAndTime() {
     updateStatus('Capturing location and time...');
@@ -763,7 +771,7 @@ async function performCheckOut() {
         const result = await response.json();
 
         if (response.ok) {
-            showMessage('Check-out successful!', 'success');
+            showMessage('Check-out successfull!', 'success');
             updateStatus('Checked out successfully');
         } else {
             showMessage(result.error || 'Check-out failed', 'error');
@@ -774,6 +782,89 @@ async function performCheckOut() {
         showMessage('Check-out failed. Please try again.', 'error');
     }
 }
+
+async function updateStatusCard() {
+    const container = document.getElementById('attendance-status');
+    if (!container || !currentUser) return;
+
+    try {
+        const response = await fetch('/api/check-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: currentUser.id })
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch status');
+        const data = await response.json();
+        const status = data.status;
+        const checkIn = data.check_in_time;
+        const checkOut = data.check_out_time;
+
+        // Create status HTML
+        let html = '';
+        if (status === 'not_checked_in') {
+            html = `
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg font-medium text-gray-900">Ready to Check In</p>
+                    <p class="text-sm text-gray-600">Scan QR code to mark your attendance</p>
+                </div>
+            `;
+        } else if (status === 'checked_in') {
+            html = `
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg font-medium text-gray-900">Checked In</p>
+                    <p class="text-sm text-gray-600">Check-in: ${checkIn}</p>
+                    <p class="text-xs text-gray-500 mt-1">Scan QR code to check out</p>
+                </div>
+            `;
+        } else if (status === 'completed') {
+            html = `
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg font-medium text-gray-900">Attendance Complete</p>
+                    <div class="text-sm text-gray-600 space-y-1">
+                        <p>Check-in: ${checkIn}</p>
+                        <p>Check-out: ${checkOut}</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            html = `
+                <div class="text-center text-gray-500">
+                    <p>Save your information to view status</p>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error updating status card:', error);
+        document.getElementById('attendance-status').innerHTML = `
+            <div class="text-center text-gray-500">
+                <p>Unable to load status. Try again later.</p>
+            </div>
+        `;
+    }
+}
+
 
 // ============ UTILITY FUNCTIONS ============
 function showUserInfo() {
