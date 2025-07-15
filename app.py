@@ -1,4 +1,3 @@
-# app.py
 from Backup import export_to_google_sheet as backup
 from models import UserRegister, AttendanceAction, CheckStatusRequest
 from flask import Flask, request, jsonify, render_template
@@ -9,7 +8,6 @@ from datetime import datetime, date
 from supabase import create_client
 from dotenv import load_dotenv
 import pytz
-import gspread
 import os
 
 load_dotenv()
@@ -20,8 +18,12 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "https://qr-attendance-sy8f.onrender.com"}})
+CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*"}})
+# CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "https://qr-attendance-sy8f.onrender.com"}})
 
+# Helper function to get IST time
+def get_indian_time():
+    return datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%H:%M:%S")
 
 @app.route("/")
 def home():
@@ -35,7 +37,6 @@ def register_user():
 
         print("Registration request:", data)
 
-        # Step 1: Check if user already exists
         existing_user = supabase.table("employees") \
             .select("*") \
             .eq("employee_id", user.employeeId) \
@@ -56,7 +57,6 @@ def register_user():
                 "existing_user": True
             })
 
-        # Step 2: Register new user
         insert_data = {
             "full_name": user.fullName,
             "mobile_no": user.mobile,
@@ -78,7 +78,6 @@ def register_user():
         return jsonify({"error": str(e)}), 500
 
 
-
 @app.route("/api/check-status", methods=["POST"])
 def check_status():
     try:
@@ -87,7 +86,6 @@ def check_status():
         user_id = data.get("user_id")
         today = date.today().isoformat()
 
-        # Step 1: Get actual employee_id from employees table (like check-in/check-out)
         emp_lookup = supabase.table("employees") \
             .select("employee_id") \
             .eq("id", user_id) \
@@ -98,7 +96,6 @@ def check_status():
 
         employee_id = emp_lookup.data[0]["employee_id"]
 
-        # Step 2: Query attendance using employee_id
         res = supabase.table("attendance") \
             .select("check_in_time, check_out_time") \
             .eq("employee_id", employee_id) \
@@ -127,18 +124,16 @@ def check_status():
         return jsonify({"error": "Status check failed"}), 500
 
 
-
 @app.route("/api/check-in", methods=["POST"])
 def check_in():
     try:
         backup()
         data = request.json
         attendance = AttendanceAction(**data)
-        user_id = attendance.user_id  # This is the internal `id`
+        user_id = attendance.user_id
         print("Check-in request:", user_id)
         today = date.today().isoformat()
 
-        # Get actual employee_id from employees table
         emp_lookup = supabase.table("employees") \
             .select("employee_id") \
             .eq("id", user_id) \
@@ -149,12 +144,10 @@ def check_in():
 
         employee_id = emp_lookup.data[0]["employee_id"]
 
-        # Format location
         location_str = None
         if attendance.location:
             location_str = f"{attendance.location['latitude']},{attendance.location['longitude']}"
 
-        # Check if already checked in
         existing = supabase.table("attendance") \
             .select("id") \
             .eq("employee_id", employee_id) \
@@ -164,11 +157,10 @@ def check_in():
         if existing.data:
             return jsonify({"error": "Already checked in today"}), 400
 
-        #Insert check-in
         check_in_data = {
             "employee_id": employee_id,
             "date": today,
-            "check_in_time": datetime.now().isoformat(),
+            "check_in_time": get_indian_time(),
             "check_in_location": location_str
         }
 
@@ -184,16 +176,14 @@ def check_in():
         return jsonify({"error": "Check-in failed"}), 500
 
 
-
 @app.route("/api/check-out", methods=["POST"])
 def check_out():
     try:
         data = request.json
         attendance = AttendanceAction(**data)
-        user_id = attendance.user_id  # This is the internal `id`
+        user_id = attendance.user_id
         today = date.today().isoformat()
 
-        # Step 1: Get actual employee_id from employees table
         emp_lookup = supabase.table("employees") \
             .select("employee_id") \
             .eq("id", user_id) \
@@ -204,15 +194,13 @@ def check_out():
 
         employee_id = emp_lookup.data[0]["employee_id"]
 
-        # Step 2: Format location
         location_str = None
         if attendance.location:
             location_str = f"{attendance.location['latitude']},{attendance.location['longitude']}"
 
-        # Step 3: Update the attendance row where employee_id and date match and check_out_time is NULL
         update_res = supabase.table("attendance") \
             .update({
-                "check_out_time": datetime.now().isoformat(),
+                "check_out_time": get_indian_time(),
                 "check_out_location": location_str
             }) \
             .eq("employee_id", employee_id) \
@@ -231,7 +219,6 @@ def check_out():
     except Exception as e:
         print(f"Check-out error: {e}")
         return jsonify({"error": "Check-out failed"}), 500
-
 
 
 if __name__ == "__main__":
