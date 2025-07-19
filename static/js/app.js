@@ -34,6 +34,7 @@ async function initializeApp() {
 
     // Request location permission early
     await requestLocationPermission();
+    await updateStatusCard();
 
     // Check if user data exists in temporary storage
     await primary_check()
